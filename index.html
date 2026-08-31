@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Lumo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#26241D; --ink-dim:#6B6552; --paper:#F5F2EA; --panel:#FFFFFF; --panel2:#EEEADD;
+  --line:rgba(38,36,29,.12);
+  --brass:#B8722E; --brass-dim:#8C5A22; --sage:#5C7A63; --clay:#B6503C;
+}
+.flash .q,.flash .a,.diff-box .model{font-family:'Fraunces',serif;}
+.src-list{margin-top:12px; text-align:left;}
+.src-list .lbl{font-size:.68rem; color:var(--ink-dim); margin-bottom:4px;}
+.src-list a{display:block; font-size:.8rem; color:var(--brass-dim); word-break:break-all; margin-bottom:2px; font-family:'Inter',sans-serif;}
+.rt-toolbar{display:flex; gap:5px; margin-bottom:6px;}
+.rt-toolbar button{
+  width:32px; height:30px; border-radius:7px; border:1px solid var(--line); background:var(--panel);
+  color:var(--ink); font-size:.85rem; cursor:pointer; font-family:'Inter',sans-serif;
+}
+.rt-toolbar button.mk{background:#F2D57E; border-color:#d9b95c;}
+.rt-edit{
+  min-height:44px; background:var(--panel); border:1px solid var(--line); border-radius:10px;
+  color:var(--ink); padding:10px 12px; font-size:.92rem; outline:none; font-family:'Fraunces',serif;
+  line-height:1.5; margin-bottom:10px; white-space:pre-wrap;
+}
+.rt-edit:focus{border-color:var(--brass-dim);}
+.rt-edit:empty:before{content:attr(data-placeholder); color:var(--ink-dim); white-space:pre-line;}
+.rt-edit mark{background:#F2D57E; color:var(--ink);}
+.flash a, .diff-box .model a, .manage-row a, .rt-edit a{color:var(--brass-dim); text-decoration:underline;}
+.cat-row{display:flex; gap:8px; margin-bottom:10px;}
+.cat-row input{flex:1;}
+.filter-row{display:flex; gap:8px; margin-bottom:14px;}
+.filter-row select{
+  flex:1; background:var(--panel); border:1px solid var(--line); border-radius:8px;
+  color:var(--ink); padding:8px 9px; font-size:.82rem; font-family:'Inter',sans-serif;
+}
+.field-err{font-size:.75rem; color:var(--clay); margin:-4px 0 8px;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  background:var(--paper); color:var(--ink);
+  font-family:'Inter',-apple-system,sans-serif;
+  height:100dvh; overflow:hidden; display:flex; flex-direction:column;
+  padding-top:env(safe-area-inset-top,0px);
+}
+h1,h2,.serif{font-family:'Fraunces',serif;}
+button{font-family:inherit;}
+::selection{background:var(--brass);color:#fff;}
+
+header{padding:22px 20px 14px; flex-shrink:0; display:flex; align-items:flex-start; justify-content:space-between;}
+header h1{font-size:1.5rem; font-weight:500; letter-spacing:.01em;}
+header p{color:var(--ink-dim); font-size:.82rem; margin-top:3px;}
+.hdr-btn{background:none; border:1px solid var(--line); border-radius:8px; color:var(--ink-dim); font-size:.78rem; padding:6px 11px; cursor:pointer;}
+
+main{flex:1; overflow-y:auto; padding:0 18px 100px;}
+.scr{display:none;}
+.scr.on{display:block;}
+
+/* ---- shared inputs ---- */
+.field{
+  width:100%; background:var(--panel); border:1px solid var(--line); border-radius:10px;
+  color:var(--ink); padding:11px 13px; font-size:.92rem; outline:none; font-family:inherit;
+}
+.field:focus{border-color:var(--brass-dim);}
+.btn{
+  background:var(--brass); color:#fff; border:none; border-radius:10px;
+  padding:10px 16px; font-weight:600; font-size:.88rem; cursor:pointer;
+}
+.btn:active{transform:scale(.97);}
+.btn.ghost{background:var(--panel2); color:var(--ink);}
+.btn.wide{width:100%;}
+
+/* ---- Tasks ---- */
+.add-row{display:flex; gap:8px; margin-bottom:10px;}
+.add-row input{flex:1;}
+.link-row{margin-bottom:18px;}
+.link-row button{background:none; border:none; color:var(--ink-dim); font-size:.76rem; text-decoration:underline; cursor:pointer; padding:2px 0;}
+
+.task{display:flex; align-items:center; gap:12px; padding:14px 4px; border-bottom:1px solid var(--line);}
+.task:last-child{border-bottom:none;}
+.chk{width:20px; height:20px; border-radius:50%; border:1.5px solid var(--ink-dim); flex-shrink:0; cursor:pointer; display:flex; align-items:center; justify-content:center;}
+.chk.done{background:var(--sage); border-color:var(--sage);}
+.chk.done::after{content:'✓'; font-size:.7rem; color:#fff;}
+.t-body{flex:1; min-width:0;}
+.t-name{font-family:'Fraunces',serif; font-size:1.02rem; font-weight:500; word-break:break-word;}
+.t-name.done{color:var(--ink-dim); text-decoration:line-through;}
+.t-name[contenteditable]:focus{outline:none;}
+.t-time{font-size:.75rem; color:var(--ink-dim); margin-top:2px; font-variant-numeric:tabular-nums; cursor:pointer;}
+.t-time.over{color:var(--clay);}
+.t-time-in{width:60px; font-size:.75rem; padding:2px 5px; border-radius:5px; border:1px solid var(--line); background:var(--panel); color:var(--ink); font-variant-numeric:tabular-nums;}
+.timer-btn{
+  flex-shrink:0; width:52px; height:52px; border-radius:50%;
+  background:var(--panel2); border:1px solid var(--line); color:var(--ink);
+  font-size:.82rem; font-weight:600; cursor:pointer; font-variant-numeric:tabular-nums;
+  display:flex; align-items:center; justify-content:center; line-height:1.1; text-align:center;
+  transition:box-shadow .6s ease, background .3s ease;
+}
+.timer-btn.running{background:var(--brass); color:#fff; animation:breathe 2.6s ease-in-out infinite;}
+.timer-btn.finished{background:var(--clay); color:#fff; animation:none;}
+@keyframes breathe{
+  0%,100%{box-shadow:0 0 0 0 rgba(184,114,46,.35);}
+  50%{box-shadow:0 0 0 10px rgba(184,114,46,0);}
+}
+.del-x{flex-shrink:0; color:var(--ink-dim); font-size:1.1rem; cursor:pointer; padding:4px;}
+.empty{color:var(--ink-dim); font-size:.88rem; padding:30px 4px; text-align:center;}
+
+/* ---- Review ---- */
+.bulk-wrap{margin-bottom:14px;}
+textarea.field{min-height:80px; resize:vertical; line-height:1.5; font-size:.88rem;}
+.bulk-hint{font-size:.72rem; color:var(--ink-dim); margin:6px 2px 10px;}
+.add-actions{display:flex; gap:8px; margin-bottom:20px;}
+.deck-count{font-size:.8rem; color:var(--ink-dim); margin-bottom:12px;}
+
+.mode-tabs{display:flex; gap:6px; margin-bottom:16px;}
+.mode-tabs button{
+  flex:1; padding:8px; border-radius:8px; border:1px solid var(--line);
+  background:var(--panel); color:var(--ink-dim); font-size:.82rem; font-weight:500; cursor:pointer;
+}
+.mode-tabs button.on{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+
+.flash{
+  background:var(--panel); border-radius:16px; padding:30px 20px; min-height:150px;
+  display:flex; align-items:center; justify-content:center; text-align:center;
+  cursor:pointer; margin-bottom:14px; border:1px solid var(--line);
+}
+.flash .q,.flash .a{font-family:'Fraunces',serif; font-size:1.1rem; line-height:1.5;}
+.flash .a{display:none; color:var(--brass-dim);}
+.flash.flip .q{display:none;}
+.flash.flip .a{display:block;}
+.flash svg{max-width:100%; max-height:220px;}
+.flash img{max-width:100%; max-height:230px; border-radius:8px;}
+.flash .q.mech-q{font-size:1.1rem;}
+
+.manage-row{display:flex; align-items:center; gap:10px; padding:11px 2px; border-bottom:1px solid var(--line);}
+.manage-row:last-child{border-bottom:none;}
+.manage-row .mr-txt{flex:1; min-width:0; font-size:.86rem;}
+.manage-row .mr-txt .mq{font-family:'Fraunces',serif; word-break:break-word;}
+.manage-row .mr-txt .ma{color:var(--ink-dim); font-size:.78rem; margin-top:2px; word-break:break-word;}
+.manage-row .mr-tag{font-size:.65rem; color:var(--brass-dim); text-transform:uppercase; letter-spacing:.04em; margin-top:2px;}
+.mr-btn{background:none; border:none; color:var(--ink-dim); font-size:.78rem; cursor:pointer; padding:5px 6px; text-decoration:underline; flex-shrink:0;}
+
+.edit-block{margin-bottom:14px;}
+.edit-block .field{margin-bottom:8px;}
+.edit-preview{max-width:100%; max-height:160px; border-radius:8px; display:block; margin:8px 0;}
+
+.sync-note{font-size:.76rem; color:var(--ink-dim); line-height:1.5; margin:10px 0 14px;}
+.sync-status{font-size:.8rem; margin:10px 0; padding:10px; border-radius:8px; background:var(--panel2); display:none;}
+.sync-status.on{display:block;}
+.flash-hint{font-size:.72rem; color:var(--ink-dim); text-align:center; margin-bottom:14px;}
+.grade-row{display:flex; gap:10px;}
+.grade-row button{flex:1; padding:12px; border-radius:10px; font-weight:600; font-size:.9rem; border:1px solid var(--line); background:var(--panel2); color:var(--ink); cursor:pointer;}
+.grade-row .miss{color:var(--clay);}
+.grade-row .got{color:var(--sage);}
+
+.type-wrap{margin-bottom:14px;}
+.type-wrap input{margin-bottom:10px;}
+.diff-box{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; font-size:.9rem; line-height:1.6;}
+.diff-box .lbl{font-size:.68rem; text-transform:none; color:var(--ink-dim); margin-bottom:4px;}
+.diff-box .model{font-family:'Fraunces',serif;}
+.diff-box mark{background:rgba(92,122,99,.28); color:var(--ink); border-radius:3px; padding:0 2px;}
+.diff-box mark.miss{background:rgba(182,80,60,.22);}
+
+/* ---- Mechanism drawing pad ---- */
+.pad-overlay{
+  position:fixed; inset:0; background:rgba(38,36,29,.5); display:none;
+  align-items:flex-end; justify-content:center; z-index:50;
+}
+.pad-overlay.on{display:flex;}
+.pad-sheet{
+  background:var(--paper); width:100%; max-width:520px; border-radius:18px 18px 0 0;
+  padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));
+  max-height:92vh; overflow-y:auto;
+}
+.pad-sheet h2{font-size:1.05rem; margin-bottom:12px;}
+.pad-canvas-wrap{
+  background:var(--panel); border:1px solid var(--line); border-radius:12px;
+  overflow:hidden; margin:10px 0 12px; touch-action:none;
+}
+.pad-canvas-wrap svg{display:block; width:100%; height:260px;}
+.pad-tools{display:flex; gap:8px; margin-bottom:14px;}
+
+nav{display:flex; flex-shrink:0; background:var(--panel); border-top:1px solid var(--line); padding-bottom:env(safe-area-inset-bottom,0px);}
+nav button{flex:1; background:none; border:none; color:var(--ink-dim); padding:13px 0 11px; font-size:.8rem; cursor:pointer; font-weight:500;}
+nav button.on{color:var(--brass);}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1 id="hdr-title">Tasks</h1>
+    <p id="hdr-sub">What are you doing right now?</p>
+  </div>
+  <button class="hdr-btn" onclick="openSync()">Sync</button>
+</header>
+
+<main>
+  <section class="scr on" id="scr-tasks">
+    <div class="add-row">
+      <input class="field" id="new-task" placeholder="Add a task…" maxlength="120">
+      <button class="btn" onclick="addTask()">Add</button>
+    </div>
+    <div id="task-list"></div>
+  </section>
+
+  <section class="scr" id="scr-review">
+    <div class="bulk-wrap">
+      <div class="cat-row">
+        <input class="field" id="add-unit" list="unit-dl" placeholder="Unit (optional)">
+        <input class="field" id="add-subtopic" list="subtopic-dl" placeholder="Subtopic (optional)">
+      </div>
+      <datalist id="unit-dl"></datalist>
+      <datalist id="subtopic-dl"></datalist>
+      <div class="rt-toolbar">
+        <button type="button" onmousedown="event.preventDefault()" onclick="rtCmd('bold')"><b>B</b></button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="rtCmd('italic')"><i>I</i></button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="rtCmd('underline')"><u>U</u></button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="rtCmd('strikeThrough')"><s>S</s></button>
+        <button type="button" class="mk" onmousedown="event.preventDefault()" onclick="rtHighlight()">H</button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="rtCmd('subscript')">X<sub>2</sub></button>
+        <button type="button" onmousedown="event.preventDefault()" onclick="rtCmd('superscript')">X<sup>2</sup></button>
+      </div>
+      <div class="rt-edit" id="bulk-in" contenteditable="true" style="min-height:130px;" data-placeholder="Question…&#10;--&#10;Answer, can include a link like https://source.com&#10;--&#10;Next question…&#10;--&#10;Next answer…"></div>
+      <div class="bulk-hint">Type a question, a line with just <b>--</b>, then the answer, then <b>--</b> again for the next question — no blank lines needed. A line that's only a link becomes a source; a link inside a sentence stays clickable in place. Use the buttons above to format selected text.</div>
+      <div class="add-actions">
+        <button class="btn" onclick="bulkAdd()">Add cards</button>
+        <button class="btn ghost" onclick="openPad()">+ Draw mechanism</button>
+      </div>
+      <div class="field-err" id="bulk-err"></div>
+    </div>
+    <div class="deck-count" id="deck-count"></div>
+    <div class="link-row"><button onclick="openManage()">Edit or delete cards →</button></div>
+    <div class="filter-row">
+      <select id="filter-unit" onchange="onFilterUnitChange()"><option value="">All units</option></select>
+      <select id="filter-subtopic" onchange="onFilterChange()"><option value="">All subtopics</option></select>
+    </div>
+    <div class="mode-tabs" id="mode-tabs">
+      <button class="on" id="mode-flip" onclick="setMode('flip')">Flip</button>
+      <button id="mode-type" onclick="setMode('type')">Type answer</button>
+    </div>
+    <div id="review-area"></div>
+  </section>
+</main>
+
+<nav>
+  <button class="on" id="nav-tasks" onclick="go('tasks')">Tasks</button>
+  <button id="nav-review" onclick="go('review')">Review</button>
+</nav>
+
+<!-- mechanism photo sheet -->
+<div class="pad-overlay" id="pad-overlay">
+  <div class="pad-sheet">
+    <h2 class="serif">Add a mechanism</h2>
+    <input class="field" id="pad-q" placeholder="Question (e.g. SN2 with a bulky base)" maxlength="140" style="margin-bottom:10px;">
+    <input class="field" type="file" accept="image/*" id="pad-file" style="margin-bottom:10px;">
+    <img id="pad-preview" style="display:none; max-width:100%; max-height:200px; border-radius:8px; margin-bottom:10px;">
+    <p class="bulk-hint" id="pad-size-note"></p>
+    <div class="pad-tools">
+      <button class="btn ghost" style="flex:1" onclick="closePad()">Cancel</button>
+      <button class="btn" style="flex:1" id="pad-save-btn" onclick="savePadCard()" disabled>Save card</button>
+    </div>
+  </div>
+</div>
+
+<!-- manage cards sheet -->
+<div class="pad-overlay" id="manage-overlay">
+  <div class="pad-sheet">
+    <h2 class="serif">Your cards</h2>
+    <div id="manage-list"></div>
+    <div class="pad-tools" style="margin-top:14px;">
+      <button class="btn ghost wide" onclick="closeManage()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- card edit sheet -->
+<div class="pad-overlay" id="edit-overlay">
+  <div class="pad-sheet">
+    <h2 class="serif">Edit card</h2>
+    <div id="edit-fields"></div>
+    <div class="pad-tools">
+      <button class="btn ghost" style="flex:1" onclick="closeEdit()">Cancel</button>
+      <button class="btn" style="flex:1" onclick="saveEdit()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- GitHub sync sheet -->
+<div class="pad-overlay" id="sync-overlay">
+  <div class="pad-sheet">
+    <h2 class="serif">Sync via GitHub Gist</h2>
+    <p class="sync-note">Stores your tasks + cards in a private GitHub Gist. Needs a <a href="https://github.com/settings/tokens/new?scopes=gist&description=Lumo" target="_blank" rel="noopener">personal access token</a> with just the <b>gist</b> scope. The token is kept only in this browser's storage — it's never sent anywhere except GitHub's API.</p>
+    <input class="field" id="sync-token" type="password" placeholder="GitHub token (ghp_…)" style="margin-bottom:8px;">
+    <input class="field" id="sync-gistid" placeholder="Gist ID (leave blank the first time)" style="margin-bottom:12px;">
+    <div class="pad-tools">
+      <button class="btn ghost" style="flex:1" onclick="ghUpload()">Upload</button>
+      <button class="btn ghost" style="flex:1" id="sync-download-btn" onclick="ghDownload()">Download</button>
+      <button class="btn ghost" style="flex:1" onclick="ghMerge()">Merge</button>
+    </div>
+    <button class="btn ghost wide" style="margin-top:8px;" onclick="ghImportV3()">Import from an old Lumo v3 backup</button>
+    <p class="bulk-hint" style="margin-top:6px;">Same token + Gist ID as above. Converts v3's tasks, decks, and custom questions into this version's format and adds them alongside what's already here — nothing existing gets overwritten.</p>
+    <div class="sync-status" id="sync-status"></div>
+    <div class="pad-tools" style="margin-top:4px;">
+      <button class="btn ghost wide" onclick="closeSync()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- state ---------- */
+var S = JSON.parse(localStorage.getItem('lumo_v5') || 'null') || { tasks: [], cards: [] };
+function save(){ localStorage.setItem('lumo_v5', JSON.stringify(S)); }
+var ivs = {};
+
+function fmt(s){ s=Math.max(0,s|0); var m=Math.floor(s/60), r=s%60; return m+':'+(r<10?'0':'')+r; }
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+/* ---------- nav ---------- */
+function go(scr){
+  document.querySelectorAll('.scr').forEach(function(e){ e.classList.remove('on'); });
+  document.getElementById('scr-'+scr).classList.add('on');
+  document.querySelectorAll('nav button').forEach(function(e){ e.classList.remove('on'); });
+  document.getElementById('nav-'+scr).classList.add('on');
+  document.getElementById('hdr-title').textContent = scr==='tasks' ? 'Tasks' : 'Review';
+  document.getElementById('hdr-sub').textContent = scr==='tasks' ? 'What are you doing right now?' : 'Quick recall, no setup.';
+  if(scr==='review'){ refreshTagLists(); renderReview(); }
+}
+
+/* ---------- tasks ---------- */
+function addTask(){
+  var inp=document.getElementById('new-task'); var v=inp.value.trim(); if(!v) return;
+  S.tasks.unshift({id:uid(), nm:v, done:false, sec:25*60, run:false, over:false, ws:null, rs:null});
+  inp.value=''; save(); renderTasks();
+}
+function findTask(id){ return S.tasks.find(function(t){ return t.id===id; }); }
+function toggleDone(id){
+  var t=findTask(id); t.done=!t.done;
+  if(t.done && ivs[id]){ clearInterval(ivs[id]); delete ivs[id]; t.run=false; }
+  save(); renderTasks();
+}
+function delTask(id){
+  if(ivs[id]){ clearInterval(ivs[id]); delete ivs[id]; }
+  S.tasks=S.tasks.filter(function(t){ return t.id!==id; });
+  save(); renderTasks();
+}
+function renameTask(id,val){ var t=findTask(id); if(!t) return; if(val.trim()) t.nm=val.trim(); save(); }
+function toggleTimer(id){
+  var t=findTask(id); if(t.done) return;
+  if(ivs[id]){ clearInterval(ivs[id]); delete ivs[id]; t.run=false; save(); renderTasks(); return; }
+  if(t.over){ t.over=false; t.sec=25*60; }
+  t.run=true; t.ws=Date.now(); t.rs=t.sec; save();
+  ivs[id]=setInterval(function(){
+    if(!t.run) return;
+    t.sec=Math.max(0, t.rs-Math.floor((Date.now()-t.ws)/1000));
+    if(t.sec===0){
+      t.over=true; t.run=false; clearInterval(ivs[id]); delete ivs[id];
+      save(); renderTasks();
+      if(navigator.vibrate) navigator.vibrate([80,50,80]);
+      return;
+    }
+    var btn=document.getElementById('tb-'+id); if(btn) btn.textContent=fmt(t.sec);
+  },1000);
+  renderTasks();
+}
+function editTaskTime(id, el){
+  var t=findTask(id);
+  var inp=document.createElement('input');
+  inp.type='number'; inp.min='1'; inp.max='300'; inp.className='t-time-in';
+  inp.value=Math.round(t.sec/60);
+  var commit=function(){
+    var mins=parseFloat(inp.value);
+    if(mins && mins>0){ t.sec=Math.round(mins*60); t.over=false; save(); }
+    renderTasks();
+  };
+  inp.addEventListener('blur', commit);
+  inp.addEventListener('keydown', function(e){ if(e.key==='Enter') inp.blur(); if(e.key==='Escape'){ inp.removeEventListener('blur',commit); renderTasks(); } });
+  el.replaceWith(inp); inp.focus(); inp.select();
+}
+function renderTasks(){
+  var wrap=document.getElementById('task-list'); wrap.innerHTML='';
+  if(!S.tasks.length){ wrap.innerHTML='<div class="empty">No tasks yet — add the one you\'re about to do.</div>'; return; }
+  S.tasks.forEach(function(t){
+    var row=document.createElement('div'); row.className='task';
+    var btnClass=t.run?'running':(t.over?'finished':'');
+    var btnLabel=t.run?fmt(t.sec):(t.over?'done':fmt(t.sec));
+    row.innerHTML=
+      '<div class="chk '+(t.done?'done':'')+'" data-act="chk"></div>'+
+      '<div class="t-body">'+
+        '<div class="t-name '+(t.done?'done':'')+'" contenteditable="true" data-act="nm">'+t.nm+'</div>'+
+        '<div class="t-time '+(t.over?'over':'')+'" data-act="time">'+(t.done?'done':(t.over?'time\'s up — tap to restart':fmt(t.sec)+' set · tap to change'))+'</div>'+
+      '</div>'+
+      '<div class="timer-btn '+btnClass+'" id="tb-'+t.id+'" data-act="timer">'+btnLabel+'</div>'+
+      '<div class="del-x" data-act="del">×</div>';
+    row.querySelector('[data-act="chk"]').addEventListener('click',function(){ toggleDone(t.id); });
+    row.querySelector('[data-act="timer"]').addEventListener('click',function(){ toggleTimer(t.id); });
+    row.querySelector('[data-act="del"]').addEventListener('click',function(){ delTask(t.id); });
+    var nmEl=row.querySelector('[data-act="nm"]');
+    nmEl.addEventListener('blur',function(){ renameTask(t.id, nmEl.textContent); });
+    nmEl.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); nmEl.blur(); } });
+    var timeEl=row.querySelector('[data-act="time"]');
+    if(!t.run && !t.done){
+      timeEl.addEventListener('click', function(){ editTaskTime(t.id, timeEl); });
+    }
+    wrap.appendChild(row);
+  });
+}
+
+/* ---------- review: cards + bulk add ---------- */
+function stripHtml(html){
+  var d=document.createElement('div'); d.innerHTML=html;
+  return (d.textContent||d.innerText||'').replace(/\s+/g,' ').trim();
+}
+function autoLinkify(html){
+  return html.split(/(<a\b[^>]*>[\s\S]*?<\/a>)/gi).map(function(part){
+    if(/^<a\b/i.test(part)) return part;
+    return part.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+  }).join('');
+}
+function htmlToLines(html){
+  html = html.replace(/<\/div>\s*<div>/gi, '\n');
+  html = html.replace(/<div>/gi, '').replace(/<\/div>/gi, '\n');
+  html = html.replace(/<br\s*\/?>/gi, '\n');
+  return html.split(/\n/);
+}
+function rtCmd(cmd){ document.execCommand(cmd, false, null); }
+function rtHighlight(){
+  try{ document.execCommand('hiliteColor', false, '#F2D57E'); }
+  catch(e){ document.execCommand('backColor', false, '#F2D57E'); }
+}
+function trimEdgeBlanks(buf){
+  var b=buf.slice();
+  while(b.length && !stripHtml(b[0]).length) b.shift();
+  while(b.length && !stripHtml(b[b.length-1]).length) b.pop();
+  return b;
+}
+function bulkAdd(){
+  var rt=document.getElementById('bulk-in');
+  var lines = htmlToLines(rt.innerHTML);
+  var state='q', qBuf=[], aBuf=[], added=0;
+  function closeCard(){
+    var qKeep = trimEdgeBlanks(qBuf);
+    var links=[], aRaw=[];
+    aBuf.forEach(function(l){
+      var t = stripHtml(l).trim();
+      if(t && /^https?:\/\/\S+$/.test(t) && links.length<3) links.push(l);
+      else aRaw.push(l);
+    });
+    var aKeep = trimEdgeBlanks(aRaw);
+    var qHtml = autoLinkify(qKeep.join('<br>'));
+    var aHtml = autoLinkify(aKeep.join('<br>'));
+    if(stripHtml(qHtml) && stripHtml(aHtml)){
+      var card={id:uid(), type:'text', q:qHtml, a:aHtml};
+      if(links.length) card.links=links.map(function(l){ return stripHtml(l); });
+      var unit=document.getElementById('add-unit').value.trim();
+      var sub=document.getElementById('add-subtopic').value.trim();
+      if(unit) card.unit=unit;
+      if(sub) card.subtopic=sub;
+      S.cards.push(card); added++;
+    }
+    qBuf=[]; aBuf=[];
+  }
+  lines.forEach(function(line){
+    if(stripHtml(line).trim()==='--'){
+      if(state==='q'){ state='a'; }
+      else { closeCard(); state='q'; }
+    } else {
+      (state==='q'?qBuf:aBuf).push(line);
+    }
+  });
+  if(qBuf.length || aBuf.length) closeCard();
+
+  var err=document.getElementById('bulk-err');
+  if(added){ rt.innerHTML=''; save(); refreshTagLists(); renderReview(); err.textContent=''; }
+  else if(stripHtml(rt.innerHTML)) err.textContent="Couldn't find a complete question/answer pair — check there's a -- between them.";
+  else err.textContent='';
+}
+
+var revMode='flip';
+var filterUnit='', filterSubtopic='';
+function refreshTagLists(){
+  var units={}, subs={};
+  S.cards.forEach(function(c){ if(c.unit) units[c.unit]=true; if(c.subtopic) subs[c.subtopic]=true; });
+  var udl=document.getElementById('unit-dl'), sdl=document.getElementById('subtopic-dl');
+  udl.innerHTML=Object.keys(units).map(function(u){ return '<option value="'+u+'">'; }).join('');
+  sdl.innerHTML=Object.keys(subs).map(function(s){ return '<option value="'+s+'">'; }).join('');
+
+  var fu=document.getElementById('filter-unit');
+  var curU=fu.value;
+  fu.innerHTML='<option value="">All units</option>'+Object.keys(units).sort().map(function(u){ return '<option value="'+u+'">'+u+'</option>'; }).join('');
+  fu.value = units[curU] ? curU : '';
+  filterUnit = fu.value;
+  refreshSubtopicFilter();
+}
+function refreshSubtopicFilter(){
+  var fs=document.getElementById('filter-subtopic');
+  var curS=fs.value;
+  var subs={};
+  S.cards.forEach(function(c){
+    if(filterUnit && c.unit!==filterUnit) return;
+    if(c.subtopic) subs[c.subtopic]=true;
+  });
+  fs.innerHTML='<option value="">All subtopics</option>'+Object.keys(subs).sort().map(function(s){ return '<option value="'+s+'">'+s+'</option>'; }).join('');
+  fs.value = subs[curS] ? curS : '';
+  filterSubtopic = fs.value;
+}
+function onFilterUnitChange(){
+  filterUnit=document.getElementById('filter-unit').value;
+  refreshSubtopicFilter();
+  onFilterChange();
+}
+function onFilterChange(){
+  filterSubtopic=document.getElementById('filter-subtopic').value;
+  buildQueue(); renderReview();
+}
+function setMode(m){
+  revMode=m;
+  document.getElementById('mode-flip').classList.toggle('on', m==='flip');
+  document.getElementById('mode-type').classList.toggle('on', m==='type');
+  revFlipped=false; renderReview();
+}
+
+var revQueue=[], revIdx=0, revFlipped=false;
+function buildQueue(){
+  revQueue = S.cards.filter(function(c){
+    if(filterUnit && c.unit!==filterUnit) return false;
+    if(filterSubtopic && c.subtopic!==filterSubtopic) return false;
+    return true;
+  }).sort(function(){ return Math.random()-0.5; });
+  revIdx=0; revFlipped=false;
+}
+
+function norm(s){ return s.toLowerCase().replace(/[^\w\s]/g,'').trim(); }
+function renderReview(){
+  document.getElementById('deck-count').textContent = S.cards.length ? S.cards.length+' card'+(S.cards.length===1?'':'s')+' saved' : '';
+  var area=document.getElementById('review-area');
+  if(!S.cards.length){ area.innerHTML='<div class="empty">Add cards above to start reviewing.</div>'; return; }
+  if(!revQueue.length || revIdx>=revQueue.length) buildQueue();
+  if(!revQueue.length){ area.innerHTML='<div class="empty">No cards in this unit/subtopic yet.</div>'; return; }
+  var c=revQueue[revIdx];
+
+  if(c.type==='mech'){
+    area.innerHTML=
+      '<div class="flash '+(revFlipped?'flip':'')+'" id="flash-card">'+
+        '<div class="q mech-q">'+c.q+'</div><div class="a"><img src="'+c.img+'" alt="mechanism"></div>'+
+      '</div>'+
+      '<div class="flash-hint">'+(revFlipped?'How did you do?':'Sketch it out on paper, then tap to reveal')+'</div>'+
+      (revFlipped ? gradeRowHtml() : '');
+    wireFlashAndGrade();
+    return;
+  }
+
+  if(revMode==='flip'){
+    var srcHtml = (c.links && c.links.length) ?
+      '<div class="src-list"><div class="lbl">Sources</div>'+
+      c.links.map(function(u){ return '<a href="'+u+'" target="_blank" rel="noopener">'+u+'</a>'; }).join('')+
+      '</div>' : '';
+    area.innerHTML=
+      '<div class="flash '+(revFlipped?'flip':'')+'" id="flash-card">'+
+        '<div class="q">'+c.q+'</div><div class="a">'+c.a+srcHtml+'</div>'+
+      '</div>'+
+      '<div class="flash-hint">'+(revFlipped?'How did you do?':'Tap the card to reveal the answer')+'</div>'+
+      (revFlipped ? gradeRowHtml() : '');
+    wireFlashAndGrade();
+  } else {
+    area.innerHTML=
+      '<div class="flash" style="cursor:default;"><div class="q">'+c.q+'</div></div>'+
+      '<div class="type-wrap">'+
+        '<input class="field" id="type-in" placeholder="Type your answer…" autocomplete="off">'+
+        '<button class="btn wide" id="type-check">Check</button>'+
+      '</div>'+
+      '<div id="type-result"></div>';
+    document.getElementById('type-check').addEventListener('click', function(){ checkTyped(c); });
+    var inp=document.getElementById('type-in');
+    inp.addEventListener('keydown', function(e){ if(e.key==='Enter') checkTyped(c); });
+    inp.focus();
+  }
+}
+function gradeRowHtml(){
+  return '<div class="grade-row"><button class="miss" id="grade-miss">Missed it</button><button class="got" id="grade-got">Got it</button></div>';
+}
+function wireFlashAndGrade(){
+  var fc=document.getElementById('flash-card');
+  if(fc){
+    fc.addEventListener('click', function(ev){
+      if(!revFlipped){ revFlipped=true; renderReview(); return; }
+      var rect=fc.getBoundingClientRect();
+      var x = ev.clientX - rect.left;
+      if(x < rect.width/2) prevCard(); else nextCard(false);
+    });
+  }
+  if(revFlipped){
+    var g=document.getElementById('grade-got'), m=document.getElementById('grade-miss');
+    if(g) g.addEventListener('click', function(ev){ ev.stopPropagation(); nextCard(false); });
+    if(m) m.addEventListener('click', function(ev){ ev.stopPropagation(); nextCard(true); });
+  }
+}
+function prevCard(){
+  if(revIdx<=0) return;
+  revIdx--; revFlipped=false; renderReview();
+}
+function checkTyped(c){
+  var val=document.getElementById('type-in').value; // held only in the DOM/this variable — never written to S or localStorage
+  var modelPlain = stripHtml(c.a);
+  var exact = norm(val)===norm(modelPlain);
+  var srcHtml = (c.links && c.links.length) ?
+    '<div class="src-list"><div class="lbl">Sources</div>'+
+    c.links.map(function(u){ return '<a href="'+u+'" target="_blank" rel="noopener">'+u+'</a>'; }).join('')+
+    '</div>' : '';
+  var html =
+    '<div class="diff-box">'+
+      '<div class="lbl">Model answer'+(exact?' — nice, exact match':'')+'</div>'+
+      '<div class="model">'+c.a+'</div>'+srcHtml+
+    '</div>'+ gradeRowHtml();
+  document.getElementById('type-result').innerHTML = html;
+  document.getElementById('type-in').readOnly = true; // keep your attempt visible on screen until you move on
+  document.getElementById('type-check').disabled = true;
+  var g=document.getElementById('grade-got'), m=document.getElementById('grade-miss');
+  g.addEventListener('click', function(){ nextCard(false); });
+  m.addEventListener('click', function(){ nextCard(true); });
+}
+function nextCard(missed){
+  var c=revQueue[revIdx]; revIdx++; revFlipped=false;
+  if(missed) revQueue.push(c);
+  renderReview();
+}
+
+/* ---------- mechanism photo upload ---------- */
+var padImgData=null;
+function openPad(){
+  document.getElementById('pad-overlay').classList.add('on');
+  padImgData=null;
+  document.getElementById('pad-preview').style.display='none';
+  document.getElementById('pad-save-btn').disabled=true;
+  document.getElementById('pad-size-note').textContent='';
+  document.getElementById('pad-file').value='';
+  document.getElementById('pad-file').onchange=handlePadFile;
+}
+function closePad(){
+  document.getElementById('pad-overlay').classList.remove('on');
+  document.getElementById('pad-q').value='';
+}
+function compressImage(file, maxDim, quality, cb){
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var img=new Image();
+    img.onload=function(){
+      var w=img.width, h=img.height;
+      var scale=Math.min(1, maxDim/Math.max(w,h));
+      var cw=Math.max(1,Math.round(w*scale)), ch=Math.max(1,Math.round(h*scale));
+      var canvas=document.createElement('canvas'); canvas.width=cw; canvas.height=ch;
+      var ctx=canvas.getContext('2d');
+      ctx.fillStyle='#fff'; ctx.fillRect(0,0,cw,ch);
+      ctx.drawImage(img,0,0,cw,ch);
+      cb(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src=e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function handlePadFile(ev){
+  var file=ev.target.files[0]; if(!file) return;
+  compressImage(file, 900, 0.72, function(dataUrl){
+    padImgData=dataUrl;
+    var prev=document.getElementById('pad-preview');
+    prev.src=dataUrl; prev.style.display='block';
+    document.getElementById('pad-save-btn').disabled=false;
+    document.getElementById('pad-size-note').textContent = 'Compressed to about '+Math.round(dataUrl.length/1024)+' KB.';
+  });
+}
+function savePadCard(){
+  var q=document.getElementById('pad-q').value.trim();
+  var note=document.getElementById('pad-size-note');
+  if(!q){ note.textContent='Add a question first.'; note.style.color='var(--clay)'; return; }
+  if(!padImgData){ note.textContent='Add a photo first.'; note.style.color='var(--clay)'; return; }
+  var card={id:uid(), type:'mech', q:autoLinkify(escHtmlPlain(q)), img:padImgData};
+  var unit=document.getElementById('add-unit').value.trim();
+  var sub=document.getElementById('add-subtopic').value.trim();
+  if(unit) card.unit=unit;
+  if(sub) card.subtopic=sub;
+  S.cards.push(card);
+  save(); refreshTagLists(); closePad(); renderReview();
+}
+function escHtmlPlain(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ---------- manage / edit cards ---------- */
+function openManage(){ document.getElementById('manage-overlay').classList.add('on'); renderManageList(); }
+function closeManage(){ document.getElementById('manage-overlay').classList.remove('on'); }
+function renderManageList(){
+  var wrap=document.getElementById('manage-list');
+  if(!S.cards.length){ wrap.innerHTML='<div class="empty">No cards yet.</div>'; return; }
+  wrap.innerHTML='';
+  S.cards.forEach(function(c){
+    var row=document.createElement('div'); row.className='manage-row';
+    var body = c.type==='mech'
+      ? '<div class="mq">'+c.q+'</div><div class="mr-tag">mechanism photo</div>'
+      : '<div class="mq">'+c.q+'</div><div class="ma">'+c.a+'</div>';
+    row.innerHTML =
+      '<div class="mr-txt">'+body+'</div>'+
+      '<button class="mr-btn" data-act="ed">Edit</button>'+
+      '<button class="mr-btn" data-act="del">Delete</button>';
+    row.querySelector('[data-act="ed"]').addEventListener('click', function(){ openEdit(c.id); });
+    var delBtn = row.querySelector('[data-act="del"]');
+    delBtn.addEventListener('click', function(){
+      if(delBtn.dataset.armed==='1'){
+        S.cards=S.cards.filter(function(x){ return x.id!==c.id; });
+        save(); refreshTagLists(); buildQueue(); renderManageList(); renderReview();
+        return;
+      }
+      delBtn.dataset.armed='1';
+      delBtn.textContent='Tap to confirm';
+      delBtn.style.color='var(--clay)';
+      setTimeout(function(){
+        if(delBtn.dataset.armed==='1'){ delBtn.dataset.armed='0'; delBtn.textContent='Delete'; delBtn.style.color=''; }
+      }, 3000);
+    });
+    wrap.appendChild(row);
+  });
+}
+var editingId=null, editingNewImg=null;
+var RT_TOOLBAR =
+  '<div class="rt-toolbar">'+
+    '<button type="button" onmousedown="event.preventDefault()" onclick="rtCmd(\'bold\')"><b>B</b></button>'+
+    '<button type="button" onmousedown="event.preventDefault()" onclick="rtCmd(\'italic\')"><i>I</i></button>'+
+    '<button type="button" onmousedown="event.preventDefault()" onclick="rtCmd(\'underline\')"><u>U</u></button>'+
+    '<button type="button" onmousedown="event.preventDefault()" onclick="rtCmd(\'strikeThrough\')"><s>S</s></button>'+
+    '<button type="button" class="mk" onmousedown="event.preventDefault()" onclick="rtHighlight()">H</button>'+
+    '<button type="button" onmousedown="event.preventDefault()" onclick="rtCmd(\'subscript\')">X<sub>2</sub></button>'+
+    '<button type="button" onmousedown="event.preventDefault()" onclick="rtCmd(\'superscript\')">X<sup>2</sup></button>'+
+  '</div>';
+function openEdit(id){
+  editingId=id; editingNewImg=null;
+  var c=S.cards.find(function(x){ return x.id===id; });
+  var f=document.getElementById('edit-fields');
+  if(c.type==='mech'){
+    f.innerHTML =
+      '<div class="edit-block">'+
+        RT_TOOLBAR+
+        '<div class="rt-edit" id="ed-q" contenteditable="true">'+c.q+'</div>'+
+        '<img class="edit-preview" id="ed-preview" src="'+c.img+'">'+
+        '<input class="field" type="file" accept="image/*" id="ed-file">'+
+        '<div class="cat-row" style="margin-top:10px;">'+
+          '<input class="field" id="ed-unit" list="unit-dl" value="'+(c.unit||'').replace(/"/g,'&quot;')+'" placeholder="Unit (optional)">'+
+          '<input class="field" id="ed-subtopic" list="subtopic-dl" value="'+(c.subtopic||'').replace(/"/g,'&quot;')+'" placeholder="Subtopic (optional)">'+
+        '</div>'+
+      '</div>';
+    document.getElementById('ed-file').onchange=function(ev){
+      var file=ev.target.files[0]; if(!file) return;
+      compressImage(file, 900, 0.72, function(dataUrl){
+        editingNewImg=dataUrl;
+        document.getElementById('ed-preview').src=dataUrl;
+      });
+    };
+  } else {
+    f.innerHTML =
+      '<div class="edit-block">'+
+        '<div class="bulk-hint" style="margin-top:0;">Question</div>'+
+        RT_TOOLBAR+
+        '<div class="rt-edit" id="ed-q" contenteditable="true">'+c.q+'</div>'+
+        '<div class="bulk-hint">Answer</div>'+
+        RT_TOOLBAR+
+        '<div class="rt-edit" id="ed-a" contenteditable="true" style="min-height:80px;">'+c.a+'</div>'+
+        '<input class="field" id="ed-links" value="'+((c.links||[]).join(' ')).replace(/"/g,'&quot;')+'" placeholder="Source links, space-separated (optional)">'+
+        '<div class="cat-row" style="margin-top:8px;">'+
+          '<input class="field" id="ed-unit" list="unit-dl" value="'+(c.unit||'').replace(/"/g,'&quot;')+'" placeholder="Unit (optional)">'+
+          '<input class="field" id="ed-subtopic" list="subtopic-dl" value="'+(c.subtopic||'').replace(/"/g,'&quot;')+'" placeholder="Subtopic (optional)">'+
+        '</div>'+
+        '<div class="field-err" id="ed-err"></div>'+
+      '</div>';
+  }
+  document.getElementById('edit-overlay').classList.add('on');
+}
+function closeEdit(){ document.getElementById('edit-overlay').classList.remove('on'); editingId=null; }
+function saveEdit(){
+  var c=S.cards.find(function(x){ return x.id===editingId; }); if(!c) return;
+  var qHtml=autoLinkify(document.getElementById('ed-q').innerHTML.trim());
+  var errEl=document.getElementById('ed-err');
+  if(!stripHtml(qHtml)){ if(errEl) errEl.textContent="Question can't be empty."; return; }
+  c.q=qHtml;
+  var unit=document.getElementById('ed-unit').value.trim();
+  var sub=document.getElementById('ed-subtopic').value.trim();
+  if(unit) c.unit=unit; else delete c.unit;
+  if(sub) c.subtopic=sub; else delete c.subtopic;
+  if(c.type==='mech'){
+    if(editingNewImg) c.img=editingNewImg;
+  } else {
+    var aHtml=autoLinkify(document.getElementById('ed-a').innerHTML.trim());
+    if(!stripHtml(aHtml)){ errEl.textContent="Answer can't be empty."; return; }
+    c.a=aHtml;
+    var linksRaw=document.getElementById('ed-links').value.trim();
+    var links = linksRaw ? linksRaw.split(/\s+/).filter(function(u){ return /^https?:\/\//.test(u); }).slice(0,3) : [];
+    if(links.length) c.links=links; else delete c.links;
+  }
+  save(); refreshTagLists(); buildQueue(); closeEdit(); renderManageList(); renderReview();
+}
+
+/* ---------- GitHub gist sync ---------- */
+var GH_KEY='lumo_gh';
+function loadGhCreds(){
+  var g=JSON.parse(localStorage.getItem(GH_KEY)||'null')||{};
+  if(g.token) document.getElementById('sync-token').value=g.token;
+  if(g.gistId) document.getElementById('sync-gistid').value=g.gistId;
+}
+function saveGhCreds(){
+  localStorage.setItem(GH_KEY, JSON.stringify({
+    token:document.getElementById('sync-token').value.trim(),
+    gistId:document.getElementById('sync-gistid').value.trim()
+  }));
+}
+function openSync(){ document.getElementById('sync-overlay').classList.add('on'); loadGhCreds(); syncStatus(''); }
+function closeSync(){ document.getElementById('sync-overlay').classList.remove('on'); }
+function syncStatus(msg){
+  var el=document.getElementById('sync-status');
+  if(!msg){ el.classList.remove('on'); el.textContent=''; return; }
+  el.classList.add('on'); el.textContent=msg;
+}
+function ghHeaders(token){
+  return { 'Authorization':'token '+token, 'Accept':'application/vnd.github+json' };
+}
+function convertAndImportV3(remote){
+  var addedTasks=0, addedCards=0;
+  (remote.tasks||[]).forEach(function(t){
+    if(!t.nm) return;
+    S.tasks.push({
+      id:uid(), nm:t.nm, done:!!t.done,
+      sec:Math.max(60, (t.rem!=null?t.rem:t.est)||1500),
+      run:false, over:false, ws:null, rs:null
+    });
+    addedTasks++;
+  });
+  (remote.decks||[]).forEach(function(d){
+    var unit=(d.nm||'').trim(), subtopic='';
+    if(unit.indexOf(' · ')>-1){
+      var parts=unit.split(' · ');
+      unit=parts[0].trim(); subtopic=parts.slice(1).join(' · ').trim();
+    }
+    (d.cards||[]).forEach(function(c){
+      if(!c.q || !c.a) return;
+      var card={id:uid(), type:'text', q:autoLinkify(escHtmlPlain(c.q)), a:autoLinkify(escHtmlPlain(c.a))};
+      if(unit) card.unit=unit;
+      if(subtopic) card.subtopic=subtopic;
+      S.cards.push(card); addedCards++;
+    });
+  });
+  (remote.customQs||[]).forEach(function(c){
+    if(!c.q || !c.a) return;
+    S.cards.push({id:uid(), type:'text', q:autoLinkify(escHtmlPlain(c.q)), a:autoLinkify(escHtmlPlain(c.a)), unit:'Imported'});
+    addedCards++;
+  });
+  save(); refreshTagLists(); buildQueue(); renderTasks(); renderReview();
+  return { addedTasks:addedTasks, addedCards:addedCards };
+}
+function ghImportV3(){
+  var token=document.getElementById('sync-token').value.trim();
+  var gistId=document.getElementById('sync-gistid').value.trim();
+  if(!token||!gistId){ syncStatus('Need both a token and a Gist ID to import.'); return; }
+  saveGhCreds();
+  syncStatus('Fetching old backup…');
+  fetch('https://api.github.com/gists/'+gistId, { headers:ghHeaders(token) })
+    .then(function(r){ if(!r.ok) throw new Error('GitHub said '+r.status); return r.json(); })
+    .then(function(data){
+      var content = data.files['lumo-data.json'] && data.files['lumo-data.json'].content;
+      if(!content) throw new Error("No lumo-data.json in that gist");
+      var remote=JSON.parse(content);
+      var res=convertAndImportV3(remote);
+      syncStatus('Imported '+res.addedTasks+' task(s) and '+res.addedCards+' card(s) from your old backup.');
+    })
+    .catch(function(e){ syncStatus('Import failed: '+e.message); });
+}
+function ghUpload(){
+  var token=document.getElementById('sync-token').value.trim();
+  var gistId=document.getElementById('sync-gistid').value.trim();
+  if(!token){ syncStatus('Add your GitHub token first.'); return; }
+  saveGhCreds();
+  syncStatus('Uploading…');
+  var body={ description:'Lumo backup', public:false, files:{ 'lumo-data.json':{ content: JSON.stringify(S, null, 2) } } };
+  var url = gistId ? 'https://api.github.com/gists/'+gistId : 'https://api.github.com/gists';
+  fetch(url, { method: gistId?'PATCH':'POST', headers:ghHeaders(token), body:JSON.stringify(body) })
+    .then(function(r){ if(!r.ok) throw new Error('GitHub said '+r.status); return r.json(); })
+    .then(function(data){
+      document.getElementById('sync-gistid').value=data.id;
+      saveGhCreds();
+      syncStatus('Uploaded. Gist ID: '+data.id+' — save this to sync from another device.');
+    })
+    .catch(function(e){ syncStatus('Upload failed: '+e.message); });
+}
+function ghDownload(){
+  var btn=document.getElementById('sync-download-btn');
+  var token=document.getElementById('sync-token').value.trim();
+  var gistId=document.getElementById('sync-gistid').value.trim();
+  if(!token||!gistId){ syncStatus('Need both a token and a Gist ID to download.'); return; }
+  if(btn.dataset.armed!=='1'){
+    btn.dataset.armed='1'; btn.textContent='Tap to confirm — replaces local data';
+    setTimeout(function(){ if(btn.dataset.armed==='1'){ btn.dataset.armed='0'; btn.textContent='Download'; } }, 4000);
+    return;
+  }
+  btn.dataset.armed='0'; btn.textContent='Download';
+  syncStatus('Downloading…');
+  fetch('https://api.github.com/gists/'+gistId, { headers:ghHeaders(token) })
+    .then(function(r){ if(!r.ok) throw new Error('GitHub said '+r.status); return r.json(); })
+    .then(function(data){
+      var content=data.files['lumo-data.json'].content;
+      var parsed=JSON.parse(content);
+      S=parsed; save(); saveGhCreds();
+      renderTasks(); renderReview();
+      syncStatus('Downloaded and replaced local data.');
+    })
+    .catch(function(e){ syncStatus('Download failed: '+e.message); });
+}
+function ghMerge(){
+  var token=document.getElementById('sync-token').value.trim();
+  var gistId=document.getElementById('sync-gistid').value.trim();
+  if(!token||!gistId){ syncStatus('Need both a token and a Gist ID to merge.'); return; }
+  syncStatus('Merging…');
+  fetch('https://api.github.com/gists/'+gistId, { headers:ghHeaders(token) })
+    .then(function(r){ if(!r.ok) throw new Error('GitHub said '+r.status); return r.json(); })
+    .then(function(data){
+      var remote=JSON.parse(data.files['lumo-data.json'].content);
+      var localIds={};
+      S.tasks.forEach(function(t){ localIds['t'+t.id]=true; });
+      S.cards.forEach(function(c){ localIds['c'+c.id]=true; });
+      (remote.tasks||[]).forEach(function(t){ if(!localIds['t'+t.id]) S.tasks.push(t); });
+      (remote.cards||[]).forEach(function(c){ if(!localIds['c'+c.id]) S.cards.push(c); });
+      save(); saveGhCreds();
+      renderTasks(); renderReview();
+      syncStatus('Merged — items only in the gist were added, nothing local was overwritten.');
+    })
+    .catch(function(e){ syncStatus('Merge failed: '+e.message); });
+}
+
+/* ---------- boot ---------- */
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState!=='visible') return;
+  S.tasks.forEach(function(t){
+    if(!t.run || !t.ws) return;
+    t.sec=Math.max(0, t.rs-Math.floor((Date.now()-t.ws)/1000));
+    if(t.sec===0){ t.over=true; t.run=false; if(ivs[t.id]){ clearInterval(ivs[t.id]); delete ivs[t.id]; } }
+  });
+  save(); renderTasks();
+});
+document.getElementById('new-task').addEventListener('keydown', function(e){ if(e.key==='Enter') addTask(); });
+document.addEventListener('focusin', function(e){
+  if(e.target.classList && e.target.classList.contains('rt-edit')){
+    try{ document.execCommand('defaultParagraphSeparator', false, 'br'); }catch(err){}
+  }
+});
+renderTasks();
+</script>
+</body>
+</html>
